@@ -1,0 +1,27 @@
+{
+  "name": "chess-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web cờ vua: Online / Offline / vs Bot (Stockfish) với Elo chuẩn",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/fetch-stockfish.mjs",
+    "dev": "concurrently -n SERVER,CLIENT -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:client": "npm --workspace client run dev",
+    "dev:server": "npm --workspace server run dev",
+    "build": "npm --workspace client run build && npm --workspace server run build",
+    "start": "node server/dist/index.js",
+    "test": "tsx --test server/src/elo.test.ts server/src/chessRules.test.ts client/src/engine/openingBook.test.ts client/src/game/boardUtils.test.ts",
+    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+dist
+**/dist
+server/data
+*.db
+*.db-*
+.env
+.DS_Store
+client/public/stockfish/*.wasm
+client/public/stockfish/*.js

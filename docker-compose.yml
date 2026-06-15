@@ -1,0 +1,15 @@
+services:
+  chess:
+    build: .
+    container_name: chess-app
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET:-doi-secret-nay-trong-production}
+    volumes:
+      - chess-data:/app/server/data
+
+volumes:
+  chess-data:
