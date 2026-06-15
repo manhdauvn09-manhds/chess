@@ -8,9 +8,13 @@ test('bookMove: thế ban đầu trả về một nước khai cuộc hợp lệ
   assert.ok(['e2e4', 'd2d4', 'c2c4', 'g1f3'].includes(m!), `got ${m}`);
 });
 
-test('bookMove: nối tiếp đúng biến (1.e4 e5 2.Nf3 -> Nc6)', () => {
-  const m = bookMove(['e2e4', 'e7e5', 'g1f3']);
-  assert.equal(m, 'b8c6');
+test('bookMove: nối tiếp đúng biến (1.e4 e5 2.Nf3 -> Nc6/Nf6)', () => {
+  // Sách có cả Nc6 (Ý/Tây Ban Nha) lẫn Nf6 (Petrov) -> chấp nhận cả hai.
+  const valid = new Set(['b8c6', 'g8f6']);
+  for (let i = 0; i < 30; i++) {
+    const m = bookMove(['e2e4', 'e7e5', 'g1f3']);
+    assert.ok(m && valid.has(m), `got ${m}`);
+  }
 });
 
 test('bookMove: tiền tố không khớp biến nào -> null', () => {

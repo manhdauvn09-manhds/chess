@@ -31,15 +31,31 @@ const PORT = Number(process.env.PORT) || 3001;
 const roomCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 5);
 
 const app = express();
-app.use(cors());
+const PROD = process.env.NODE_ENV === 'production';
+app.set('trust proxy', 1); // sau Cloudflare/nginx -> lấy đúng IP client cho rate-limit
+// Production: client cùng origin -> không mở CORS (chỉ cho CLIENT_ORIGIN nếu đặt).
+app.use(cors(PROD ? { origin: process.env.CLIENT_ORIGIN || false } : undefined));
 app.use(express.json({ limit: '16kb' }));
 
-// Header bảo mật cơ bản (không cần thêm thư viện).
+// Header bảo mật (không cần thêm thư viện).
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'", // Stockfish WASM cần wasm-unsafe-eval
+  "style-src 'self' 'unsafe-inline'", // React đặt style inline
+  "img-src 'self' data:",
+  "connect-src 'self' ws: wss:", // Socket.IO
+  "worker-src 'self' blob:", // Stockfish worker
+  "object-src 'none'",
+  "base-uri 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  res.setHeader('Content-Security-Policy', CSP);
+  if (PROD) res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
   next();
 });
 
@@ -97,10 +113,12 @@ if (existsSync(clientDist)) {
 
 // ---------- Socket.IO ----------
 const httpServer = createServer(app);
-const isProd = process.env.NODE_ENV === 'production';
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   // Production: client phục vụ cùng origin -> không cần mở CORS.
-  cors: isProd ? { origin: process.env.CLIENT_ORIGIN || false } : { origin: '*' },
+  cors: PROD ? { origin: process.env.CLIENT_ORIGIN || false } : { origin: '*' },
+  // Mitigate DoS của ws (chưa có bản vá): gói tin cờ rất nhỏ nên giới hạn chặt.
+  maxHttpBufferSize: 1e5, // 100KB
+  perMessageDeflate: false,
 });
 const matchmaking = new Matchmaking(io);
 
@@ -161,10 +179,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('room:join', (code, cb) => {
-    const room = pendingRooms.get(code.toUpperCase().trim());
+    if (!actionLimiter(socket.id)) return cb(false, 'Quá nhiều lần thử, chờ chút');
+    const room = pendingRooms.get(String(code).toUpperCase().trim());
     if (!room) return cb(false, 'Mã phòng không tồn tại');
     if (room.socketId === socket.id) return cb(false, 'Không thể tự vào phòng của mình');
-    pendingRooms.delete(code.toUpperCase().trim());
+    pendingRooms.delete(String(code).toUpperCase().trim());
     cb(true);
 
     const host = room.player;
