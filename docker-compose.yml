@@ -4,12 +4,14 @@ services:
     container_name: chess-app
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "127.0.0.1:9420:3001"
     environment:
       - PORT=3001
       - JWT_SECRET=${JWT_SECRET:-doi-secret-nay-trong-production}
     volumes:
       - chess-data:/app/server/data
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   chess-data:

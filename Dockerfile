@@ -26,9 +26,11 @@ COPY --from=build /app/server/package.json ./server/package.json
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/client/dist ./client/dist
 
-# Thư mục lưu SQLite (mount volume để giữ dữ liệu).
-RUN mkdir -p /app/server/data
+# Non-root runtime user (Ops security review 2026-10-08).
+# Thư mục lưu SQLite (mount volume để giữ dữ liệu) — user app cần quyền ghi.
+RUN useradd -u 10001 app && mkdir -p /app/server/data && chown -R 10001:10001 /app/server/data
 VOLUME ["/app/server/data"]
 
+USER 10001
 EXPOSE 3001
 CMD ["node", "server/dist/index.js"]
