@@ -14,7 +14,7 @@ fi
 
 git pull --ff-only origin main
 docker compose build chess
-docker compose up -d --no-build chess
+docker compose up -d --no-build --force-recreate chess
 
 # Bản rollback cũ đã mất tag → xoá để không tích image trên đĩa (đang dùng thì rm tự fail, bỏ qua).
 new_rb=$(docker image inspect -f '{{.Id}}' "$IMG:rollback" 2>/dev/null || true)

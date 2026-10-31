@@ -3,4 +3,4 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 docker tag chess-chess:rollback chess-chess:latest
-docker compose up -d --no-build chess
+docker compose up -d --no-build --force-recreate chess
