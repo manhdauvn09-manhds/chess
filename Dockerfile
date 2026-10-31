@@ -1,5 +1,5 @@
 # ---------- Build ----------
-FROM node:20-bookworm AS build
+FROM node:22-bookworm AS build
 WORKDIR /app
 
 # Cài deps trước để tận dụng cache layer.
@@ -15,7 +15,7 @@ COPY . .
 RUN npm run build
 
 # ---------- Run ----------
-FROM node:20-bookworm-slim AS run
+FROM node:22-bookworm-slim AS run
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3001
